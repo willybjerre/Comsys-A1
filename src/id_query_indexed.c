@@ -40,7 +40,8 @@ struct indexed_data* mk_indexed(struct record* rs, int n) {
 }
 
 void free_naive(struct indexed_data* data) {
-  free(data);
+    free(data->irs);
+    free(data);
 }
 
 const struct record* lookup_naive(struct indexed_data *data, int64_t needle) {

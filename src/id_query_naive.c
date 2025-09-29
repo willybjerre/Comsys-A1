@@ -26,6 +26,7 @@ struct naive_data* mk_naive(struct record* rs, int n) {
 }
 
 void free_naive(struct naive_data* data) {
+  free(data->rs);
   free(data);
 }
 
