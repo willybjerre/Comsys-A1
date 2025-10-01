@@ -29,7 +29,7 @@ int comparrison(const void *a, const void *b) {
     return 0;
 }
 
-struct indexed_data* mk_indexed(struct record* rs, int n) {
+struct indexed_data* mk_binary(struct record* rs, int n) {
     struct indexed_data *data = malloc(sizeof *data);
     if (!data) {
         return NULL;
@@ -49,11 +49,11 @@ struct indexed_data* mk_indexed(struct record* rs, int n) {
 
 }
 
-void free_naive(struct indexed_data* data) {
+void free_binary(struct indexed_data* data) {
   free(data);
 }
 
-const struct record* lookup_naive(struct indexed_data *data, int64_t needle) {
+const struct record* lookup_binary(struct indexed_data *data, int64_t needle) {
 while (1) {
     int low = 0;
     int high = data->n - 1;
@@ -73,7 +73,7 @@ while (1) {
 
 int main(int argc, char** argv) {
   return id_query_loop(argc, argv,
-                    (mk_index_fn)mk_indexed,
-                    (free_index_fn)free_naive,
-                    (lookup_fn)lookup_naive);
+                    (mk_index_fn)mk_binary,
+                    (free_index_fn)free_binary,
+                    (lookup_fn)lookup_binary);
 }

@@ -39,12 +39,12 @@ struct indexed_data* mk_indexed(struct record* rs, int n) {
 
 }
 
-void free_naive(struct indexed_data* data) {
+void free_indexed(struct indexed_data* data) {
     free(data->irs);
     free(data);
 }
 
-const struct record* lookup_naive(struct indexed_data *data, int64_t needle) {
+const struct record* lookup_indexed(struct indexed_data *data, int64_t needle) {
 for (int i = 0; i < data->n; i++) {
     if (data->irs[i].osm_id == needle) {
       return &data->irs[i].record[0];
@@ -56,6 +56,6 @@ for (int i = 0; i < data->n; i++) {
 int main(int argc, char** argv) {
   return id_query_loop(argc, argv,
                     (mk_index_fn)mk_indexed,
-                    (free_index_fn)free_naive,
-                    (lookup_fn)lookup_naive);
+                    (free_index_fn)free_indexed,
+                    (lookup_fn)lookup_indexed);
 }
