@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <assert.h>
+#include <math.h>
 
 #include "record.h"
 #include "coord_query.h"
@@ -84,14 +85,16 @@ void free_kdtree(struct kd_node *node) {
     free(node);
 }
 
-const struct record* lookup_tree(struct kd_node *data, const struct record *closest_record, double best_dist, double lon, double lat){
+const struct record* lookup_tree(struct kd_node *data, const struct record *closest_record, double *best_dist, double lon, double lat){
     if (!data) {
         return closest_record;
     }
-    double d = sqrt(((data->point->lon - lon)*(data->point->lon - lon)) + ((data->point->lat - lat)*(data->point->lat - lat)));
+    double dx = data->point->lon - lon;
+    double dy = data->point->lat - lat;
+    double d = sqrt(dx*dx + dy*dy);
 
-    if (d < best_dist) {
-        best_dist = d;
+    if (d < *best_dist) {
+        *best_dist = d;
         closest_record = data->point->rs;
     }
     double diff;
@@ -101,21 +104,20 @@ const struct record* lookup_tree(struct kd_node *data, const struct record *clos
         diff = lat - data->point->lat; 
     }
 
-    struct kd_node *near;
-    struct kd_node *far;
-
+    struct kd_node *near, *far;
     if (diff < 0) {
-        near = data->left; 
+        near = data->left;
         far  = data->right;
     } else {
-        near = data->right; 
+        near = data->right;
         far  = data->left;
     }
     closest_record = lookup_tree(near, closest_record, best_dist, lon, lat);
 
-    if (fabs(diff) < best_dist) {
-    closest_record = lookup_tree(far, closest_record, best_dist, lon, lat);
-}
+    if (fabs(diff) < *best_dist) {
+        closest_record = lookup_tree(far, closest_record, best_dist, lon, lat);
+    }
+
     return closest_record;
 
 }
@@ -124,9 +126,8 @@ const struct record* lookup_kdtree(struct kd_node *data, double lon, double lat)
     if (!data) {
         return NULL;
     }
-    double initial_dist = sqrt(((data->point->lon - lon)*(data->point->lon - lon)) + ((data->point->lat - lat)*(data->point->lat - lat)));
-    const struct record *closest_record = data->point->rs;
-    return lookup_tree(data, closest_record, initial_dist, lon, lat);
+    double best_dist = INFINITY;
+    return lookup_tree(data, NULL, &best_dist, lon, lat);
     
 }
 
