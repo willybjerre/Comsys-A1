@@ -8,27 +8,29 @@
 #include "record.h"
 #include "id_query.h"
 
+// struktur til records og antal
 struct naive_data {
   struct record *rs;
   int n;
 };
 
+// Opretter wrapper
 struct naive_data* mk_naive(struct record* rs, int n) {
   struct naive_data* data = malloc(sizeof *data);
-
   if (!data) {
-    return NULL;
+    return NULL; // fejl hvis der ikke er hukommelse
   };
-  data->rs = rs;
-  data->n = n;
+  data->rs = rs; // gem records
+  data->n = n;   // gem antal
   return data;
-
 }
 
+// Frigør plads i hukommelsen
 void free_naive(struct naive_data* data) {
   free(data);
 }
 
+// Finder record med osm_id
 const struct record* lookup_naive(struct naive_data *data, int64_t needle) {
   for (int i = 0; i < data->n; i++) {
     if (data->rs[i].osm_id == needle) {
@@ -38,6 +40,7 @@ const struct record* lookup_naive(struct naive_data *data, int64_t needle) {
   return NULL;
 }
 
+// Starter query-loop
 int main(int argc, char** argv) {
   return id_query_loop(argc, argv,
                     (mk_index_fn)mk_naive,

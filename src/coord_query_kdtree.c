@@ -10,20 +10,21 @@
 #include "record.h"
 #include "coord_query.h"
 
-
+// struktur til node i k-d træ
 struct kd_node {
   struct kd_node *left;
   struct kd_node *right;
   struct indexed_record *point;
   int axis; 
 };
-
+// wrapper med record, lon og lat + pointer til første ellement i record
 struct indexed_record {
   struct record *rs;
     double lon;
     double lat;
 };
 
+// Sammenligningsfunktion ift lon til qsort
 int comparrison_lon(const void *a, const void *b) {
     const struct indexed_record *ia = a;
     const struct indexed_record *ib = b;
@@ -31,7 +32,7 @@ int comparrison_lon(const void *a, const void *b) {
     if (ia->lon > ib->lon) return 1;
     return 0;
 }
-
+// sammenligningsfunktion ift lat til qsort
 int comparrison_lat(const void *a, const void *b) {
     const struct indexed_record *ia = a;
     const struct indexed_record *ib = b;
@@ -39,45 +40,46 @@ int comparrison_lat(const void *a, const void *b) {
     if (ia->lat > ib->lat) return 1;
     return 0;
 }
+// rekursiv funktion til at bygge k-d træ
 struct kd_node* mk_tree(struct indexed_record *points, int n, int depth) {
     if (n <= 0) {
         return NULL;
     }
 
-    int axis = depth % 2;
+    int axis = depth % 2; // 0 for lon, 1 for lat
 
     if (axis == 0)
-        qsort(points, n, sizeof *points, comparrison_lon);
+        qsort(points, n, sizeof *points, comparrison_lon); // sorterer ift lon
     else
-        qsort(points, n, sizeof *points, comparrison_lat);
+        qsort(points, n, sizeof *points, comparrison_lat); // sorterer ift lat
 
     int mid = n / 2;
 
-    struct kd_node* node = malloc(sizeof *node);
+    struct kd_node* node = malloc(sizeof *node); // allokerer plads til node
     if (!node) return NULL;
 
     node->axis  = axis;
     node->point = &points[mid]; 
-    node->left  = mk_tree(points, mid, depth + 1);
-    node->right = mk_tree(points + mid + 1, n - mid - 1, depth + 1);
+    node->left  = mk_tree(points, mid, depth + 1); // venstre subtræ
+    node->right = mk_tree(points + mid + 1, n - mid - 1, depth + 1); // højre subtræ
 
     return node;
 }
-
+// funktion til at oprette k-d træ
 struct kd_node* mk_kdtree(struct record* rs, int n) {
     struct indexed_record *points = malloc(n * sizeof *points);
     if (!points) return NULL;
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) { // kopierer data til indexed_record
         points[i].rs  = &rs[i];
         points[i].lon = rs[i].lon;
         points[i].lat = rs[i].lat;
     }
 
-    return mk_tree(points, n, 0);
+    return mk_tree(points, n, 0); // bygger k-d træ
 }
 
-
+// frigør k-d træ
 void free_kdtree(struct kd_node *node) {
     if (!node) return;
     free_kdtree(node->left);
@@ -85,6 +87,7 @@ void free_kdtree(struct kd_node *node) {
     free(node);
 }
 
+// rekursiv funktion til at søge i k-d træ
 const struct record* lookup_tree(struct kd_node *data, const struct record *closest_record, double *best_dist, double lon, double lat){
     if (!data) {
         return closest_record;
@@ -93,18 +96,18 @@ const struct record* lookup_tree(struct kd_node *data, const struct record *clos
     double dy = data->point->lat - lat;
     double d = sqrt(dx*dx + dy*dy);
 
-    if (d < *best_dist) {
+    if (d < *best_dist) { // opdaterer nærmeste fundne record og afstand
         *best_dist = d;
         closest_record = data->point->rs;
     }
     double diff;
-    if (data->axis == 0) {
+    if (data->axis == 0) { // tjekker hvilken akse der skal bruges
         diff = lon - data->point->lon;  
     } else {
         diff = lat - data->point->lat; 
     }
 
-    struct kd_node *near, *far;
+    struct kd_node *near, *far; // bestemmer hvilket subtræ der skal ledes i.
     if (diff < 0) {
         near = data->left;
         far  = data->right;
@@ -112,16 +115,16 @@ const struct record* lookup_tree(struct kd_node *data, const struct record *clos
         near = data->right;
         far  = data->left;
     }
-    closest_record = lookup_tree(near, closest_record, best_dist, lon, lat);
+    closest_record = lookup_tree(near, closest_record, best_dist, lon, lat); // søger i nærmeste subtræ
 
-    if (fabs(diff) < *best_dist) {
+    if (fabs(diff) < *best_dist) { // tjekker om det er nødvendigt at søge i det andet subtræ
         closest_record = lookup_tree(far, closest_record, best_dist, lon, lat);
     }
 
     return closest_record;
 
 }
-
+// funktion til at starte søgning i k-d træ
 const struct record* lookup_kdtree(struct kd_node *data, double lon, double lat) {
     if (!data) {
         return NULL;
@@ -130,7 +133,7 @@ const struct record* lookup_kdtree(struct kd_node *data, double lon, double lat)
     return lookup_tree(data, NULL, &best_dist, lon, lat);
     
 }
-
+// Starter query-loop
 int main(int argc, char** argv) {
   return coord_query_loop(argc, argv,
                           (mk_index_fn)mk_kdtree,
