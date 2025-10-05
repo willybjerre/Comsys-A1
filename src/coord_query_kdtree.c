@@ -84,6 +84,7 @@ void free_kdtree(struct kd_node *node) {
     if (!node) return;
     free_kdtree(node->left);
     free_kdtree(node->right);
+    free(node->point);
     free(node);
 }
 
