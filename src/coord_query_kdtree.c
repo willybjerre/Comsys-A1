@@ -82,10 +82,9 @@ struct kd_node* mk_kdtree(struct record* rs, int n) {
 // frigør k-d træ
 void free_kdtree(struct kd_node *node) {
     if (!node) return;
+    free(node);
     free_kdtree(node->left);
     free_kdtree(node->right);
-    free(node->point);
-    free(node);
 }
 
 // rekursiv funktion til at søge i k-d træ
